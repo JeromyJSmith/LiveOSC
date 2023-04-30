@@ -52,7 +52,7 @@ class Logger:
         self.buf = self.buf + msg
         lines = self.buf.split("\n", 2)
         if len(lines) == 2:
-            self.send("STDERR: " + lines[0] + "\n")
+            self.send(f"STDERR: {lines[0]}" + "\n")
             self.buf = lines[1]
 
 logger = Logger()
@@ -61,7 +61,7 @@ def log(*args):
     text = ''
     for arg in args:
         if text != '':
-            text = text + ' '
+            text = f'{text} '
         text = text + str(arg)
     if logger != None:
         logger.log(text)

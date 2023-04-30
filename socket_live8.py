@@ -80,22 +80,23 @@ if _have_ssl:
 
 # WSA error codes
 if sys.platform.lower().startswith("win"):
-    errorTab = {}
-    errorTab[10004] = "The operation was interrupted."
-    errorTab[10009] = "A bad file handle was passed."
-    errorTab[10013] = "Permission denied."
-    errorTab[10014] = "A fault occurred on the network??" # WSAEFAULT
-    errorTab[10022] = "An invalid operation was attempted."
-    errorTab[10035] = "The socket operation would block"
-    errorTab[10036] = "A blocking operation is already in progress."
-    errorTab[10048] = "The network address is in use."
-    errorTab[10054] = "The connection has been reset."
-    errorTab[10058] = "The network has been shut down."
-    errorTab[10060] = "The operation timed out."
-    errorTab[10061] = "Connection refused."
-    errorTab[10063] = "The name is too long."
-    errorTab[10064] = "The host is down."
-    errorTab[10065] = "The host is unreachable."
+    errorTab = {
+        10004: "The operation was interrupted.",
+        10009: "A bad file handle was passed.",
+        10013: "Permission denied.",
+        10014: "A fault occurred on the network??",
+        10022: "An invalid operation was attempted.",
+        10035: "The socket operation would block",
+        10036: "A blocking operation is already in progress.",
+        10048: "The network address is in use.",
+        10054: "The connection has been reset.",
+        10058: "The network has been shut down.",
+        10060: "The operation timed out.",
+        10061: "Connection refused.",
+        10063: "The name is too long.",
+        10064: "The host is down.",
+        10065: "The host is unreachable.",
+    }
     __all__.append("errorTab")
 
 
@@ -142,7 +143,7 @@ _delegate_methods = ("recv", "recvfrom", "recv_into", "recvfrom_into",
 
 class _closedsocket(object):
     __slots__ = []
-    def _dummy(*args):
+    def _dummy(self):
         raise error(EBADF, 'Bad file descriptor')
     # All _delegate_methods must also be initialized here.
     send = recv = recv_into = sendto = recvfrom = recvfrom_into = _dummy
@@ -282,10 +283,7 @@ class _fileobject(object):
             self.flush()
 
     def _get_wbuf_len(self):
-        buf_len = 0
-        for x in self._wbuf:
-            buf_len += len(x)
-        return buf_len
+        return sum(len(x) for x in self._wbuf)
 
     def read(self, size=-1):
         # Use max, disallow tiny reads in a loop as they are very inefficient.
@@ -301,11 +299,10 @@ class _fileobject(object):
             # Read until EOF
             self._rbuf = StringIO()  # reset _rbuf.  we consume it via buf.
             while True:
-                data = self._sock.recv(rbufsize)
-                if not data:
+                if data := self._sock.recv(rbufsize):
+                    buf.write(data)
+                else:
                     break
-                buf.write(data)
-            return buf.getvalue()
         else:
             # Read until size bytes or EOF seen, whichever comes first
             buf_len = buf.tell()
@@ -345,7 +342,8 @@ class _fileobject(object):
                 buf_len += n
                 del data  # explicit free
                 #assert buf_len == buf.tell()
-            return buf.getvalue()
+
+        return buf.getvalue()
 
     def readline(self, size=-1):
         buf = self._rbuf
@@ -389,7 +387,6 @@ class _fileobject(object):
                     del data
                     break
                 buf.write(data)
-            return buf.getvalue()
         else:
             # Read until size bytes or \n or EOF seen, whichever comes first
             buf.seek(0, 2)  # seek end
@@ -412,13 +409,12 @@ class _fileobject(object):
                     nl += 1
                     # save the excess data to _rbuf
                     self._rbuf.write(buffer(data, nl))
-                    if buf_len:
-                        buf.write(buffer(data, 0, nl))
-                        break
-                    else:
+                    if not buf_len:
                         # Shortcut.  Avoid data copy through buf when returning
                         # a substring of our first recv().
                         return data[:nl]
+                    buf.write(buffer(data, 0, nl))
+                    break
                 n = len(data)
                 if n == size and not buf_len:
                     # Shortcut.  Avoid data copy through buf when
@@ -430,8 +426,9 @@ class _fileobject(object):
                     break
                 buf.write(data)
                 buf_len += n
-                #assert buf_len == buf.tell()
-            return buf.getvalue()
+                        #assert buf_len == buf.tell()
+
+        return buf.getvalue()
 
     def readlines(self, sizehint=0):
         total = 0
@@ -452,7 +449,7 @@ class _fileobject(object):
         return self
 
     def next(self):
-        line = self.readline()
-        if not line:
+        if line := self.readline():
+            return line
+        else:
             raise StopIteration
-        return line
