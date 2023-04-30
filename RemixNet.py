@@ -60,6 +60,7 @@ Based on the original RemixNet.py written by Nathan Ramella (nar@remix.net)
     used simply by importing the log function from the Logger module
     and then calling log() with a string argument.
 """
+
 import sys
 import errno
 import Live
@@ -70,17 +71,16 @@ version = Live.Application.get_application().get_major_version()
 if sys.platform == "win32":
     import socket   
 
-else:
-    if version > 7:
+elif version > 7:
        # 10.5
-        try:
-            file = open("/usr/lib/python2.5/string.pyc")
-        except IOError:
-            sys.path.append("/Library/Frameworks/Python.framework/Versions/2.5/lib/python2.5")
-            import socket_live8 as socket  
-        else:
-            sys.path.append("/usr/lib/python2.5")
-            import socket
+    try:
+        file = open("/usr/lib/python2.5/string.pyc")
+    except IOError:
+        sys.path.append("/Library/Frameworks/Python.framework/Versions/2.5/lib/python2.5")
+        import socket_live8 as socket  
+    else:
+        sys.path.append("/usr/lib/python2.5")
+        import socket
 
 import OSC 
         
@@ -113,11 +113,13 @@ class OSCEndpoint:
 
         self.remoteAddr = (remoteHost, remotePort)
 
-        log('OSCEndpoint starting, local address ' + str(self.localAddr) + ' remote address ' + str(self.remoteAddr))
-        
+        log(
+            f'OSCEndpoint starting, local address {self.localAddr} remote address {self.remoteAddr}'
+        )
+
         # Create our callback manager and register some utility
         # callbacks
-        
+
         self.callbackManager = OSC.CallbackManager()
         self.callbackManager.add('/remix/echo', self.callbackEcho)
         self.callbackManager.add('/remix/time', self.callbackEcho)
@@ -230,7 +232,7 @@ class OSCEndpoint:
         if host == '':
             host = source[0]
         port = msg[3]
-        log('reconfigure to send to ' + host + ':' + str(port))
+        log(f'reconfigure to send to {host}:{str(port)}')
         self.remoteAddr = (host, port)
   
     def callbackEcho(self, msg, source):

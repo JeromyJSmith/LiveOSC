@@ -111,11 +111,7 @@ def disarmTrack(num):
 
 def toggleArmTrack(num):
     """Toggles the armed state of track number (num)"""
-    armed = getTrack(num).arm
-    if armed:
-        getTrack(num).arm = 0
-    else:
-        getTrack(num).arm = 1
+    getTrack(num).arm = 0 if (armed := getTrack(num).arm) else 1
 
 def muteTrack(track, ty = 0):
     """Mutes track number (num)"""
@@ -133,11 +129,7 @@ def unmuteTrack(track, ty = 0):
     
 def toggleMuteTrack(num):
     """Toggles the muted state of track number (num)"""
-    muted = getTrack(num).mute
-    if muted:
-        getTrack(num).mute = 0
-    else:
-        getTrack(num).mute = 1
+    getTrack(num).mute = 0 if (muted := getTrack(num).mute) else 1
 
 def soloTrack(track, ty = 0):
     """Solo's track number (num)"""
@@ -155,11 +147,7 @@ def unsoloTrack(track, ty = 0):
     
 def toggleSoloTrack(num):
     """Toggles the soloed state of track number (num)"""
-    soloed = getTrack(num).solo
-    if soloed:
-        getTrack(num).solo = 0
-    else:
-        getTrack(num).solo = 1
+    getTrack(num).solo = 0 if (soloed := getTrack(num).solo) else 1
 
 def trackVolume(track, volume = None):
     """Gets/Changes the volume of track (track)
@@ -187,7 +175,7 @@ def trackSend(track, send = None, level=None):
     If (level) is specified, the level of the send is set to (level),
     a value between 0.0 and 1.0
     """
-    if send == None:
+    if send is None:
         return getTrack(track).mixer_device.sends
     if level != None:
         getTrack(track).mixer_device.sends[send].value = level
@@ -205,10 +193,7 @@ def trackName(track, name = None):
 def getClipSlots():
     """Gets a 2D list of all the clip slots in the song"""
     tracks = getTracks()
-    clipSlots = []
-    for track in tracks:
-        clipSlots.append(track.clip_slots)
-    return clipSlots
+    return [track.clip_slots for track in tracks]
 
 def getClips():
     """Gets a 2D list of all the clip in the song.
@@ -219,9 +204,7 @@ def getClips():
     tracks = getTracks()
     clips = []
     for track in getClipSlots():
-        trackClips = []
-        for clipSlot in track:
-            trackClips.append(clipSlot.clip)
+        trackClips = [clipSlot.clip for clipSlot in track]
         clips.append(trackClips)
     return clips
 

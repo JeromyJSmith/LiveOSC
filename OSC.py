@@ -58,15 +58,15 @@ class OSCMessage:
         self.message  = ""
 
         if type(msg) in (str, int, float):
-           self.append(msg)
+            self.append(msg)
         elif type(msg) in (list,tuple):
-             for m in msg:
+            for m in msg:
                 if type(m) not in (str,int,float):
-                    log("don't know how to encode message element " + str(m) + " " + str(type(m)))
+                    log(f"don't know how to encode message element {str(m)} {str(type(m))}")
                     return
                 self.append(m)
         else:
-            log("don't know how to encode message " + str(m) + " " + str(type(m)))
+            log(f"don't know how to encode message {str(m)} {str(type(m))}")
             return
 
     def append(self, argument, typehint = None):
@@ -76,11 +76,7 @@ class OSCMessage:
         If the argument is a blob (counted string)
         pass in 'b' as typehint."""
 
-        if typehint == 'b':
-            binary = OSCBlob(argument)
-        else:
-            binary = OSCArgument(argument)
-
+        binary = OSCBlob(argument) if typehint == 'b' else OSCArgument(argument)
         self.typetags = self.typetags + binary[0]
         self.message = self.message + binary[1]
 
@@ -110,7 +106,7 @@ class OSCBundle:
     """Builds OSC bundles"""
     def __init__(self, when=None):
         self.items = []
-        if when == None:
+        if when is None:
             when = time.time()
         self.when = when
 
@@ -133,11 +129,11 @@ class OSCBundle:
 def readString(data):
     length   = string.find(data,"\0")
     nextData = int(math.ceil((length+1) / 4.0) * 4)
-    return (data[0:length], data[nextData:])
+    return data[:length], data[nextData:]
 
 def readBlob(data):
-    length   = struct.unpack(">i", data[0:4])[0]    
-    nextData = int(math.ceil((length) / 4.0) * 4) + 4   
+    length = struct.unpack(">i", data[:4])[0]
+    nextData = int(math.ceil((length) / 4.0) * 4) + 4
     return (data[4:length+4], data[nextData:])
 
 def readInt(data):
@@ -154,7 +150,7 @@ def readInt(data):
 def readLong(data):
     """Tries to interpret the next 8 bytes of the data
     as a 64-bit signed integer."""
-    high, low = struct.unpack(">ll", data[0:8])
+    high, low = struct.unpack(">ll", data[:8])
     big = (long(high) << 32) + low
     rest = data[8:]
     return (big, rest)
@@ -201,7 +197,9 @@ def OSCArgument(next):
         binary  = struct.pack(">i", next)
         tag = "i"
     else:
-        raise Exception("don't know how to encode " + str(next) + " as OSC argument, type=" + str(type(next)))
+        raise Exception(
+            f"don't know how to encode {str(next)} as OSC argument, type={str(type(next))}"
+        )
 
     return (tag, binary)
 
@@ -282,7 +280,7 @@ class CallbackManager:
         """Adds a callback to our set of callbacks,
         or removes the callback with name if callback
         is None."""
-        if callback == None:
+        if callback is None:
             del self.callbacks[address]
         else:
             self.callbacks[address] = callback
@@ -355,7 +353,7 @@ if __name__ == "__main__":
     def printingCallback(stuff, source):
         sys.stdout.write("Got: ")
         for i in stuff:
-            sys.stdout.write(str(i) + " ")
+            sys.stdout.write(f"{str(i)} ")
         sys.stdout.write("\n")
 
     print "Testing bundles"

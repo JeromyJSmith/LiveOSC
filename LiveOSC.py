@@ -188,17 +188,12 @@ class LiveOSC:
     def getslots(self):
         tracks = self.song().visible_tracks
 
-        clipSlots = []
-        for track in tracks:
-            clipSlots.append(track.clip_slots)
-        return clipSlots
+        return [track.clip_slots for track in tracks]
 
     def trBlock(self, trackOffset, blocksize):
-        block = []
         tracks = self.song().visible_tracks
-        
-        for track in range(0, blocksize):
-            block.extend([str(tracks[trackOffset+track].name)])                            
+
+        block = [str(tracks[trackOffset+track].name) for track in range(0, blocksize)]
         self.oscEndpoint.send("/live/name/trackblock", block)        
 
 ######################################################################
@@ -349,51 +344,55 @@ class LiveOSC:
 
     def rem_clip_listeners(self):
         for slot in self.slisten:
-            if slot != None:
-                if slot.has_clip_has_listener(self.slisten[slot]) == 1:
-                    slot.remove_has_clip_listener(self.slisten[slot])
-    
+            if (
+                slot != None
+                and slot.has_clip_has_listener(self.slisten[slot]) == 1
+            ):
+                slot.remove_has_clip_listener(self.slisten[slot])
+
         self.slisten = {}
-        
+
         for clip in self.clisten:
-            if clip != None:
-                if clip.playing_status_has_listener(self.clisten[clip]) == 1:
-                    clip.remove_playing_status_listener(self.clisten[clip])
-                
+            if (
+                clip != None
+                and clip.playing_status_has_listener(self.clisten[clip]) == 1
+            ):
+                clip.remove_playing_status_listener(self.clisten[clip])
+
         self.clisten = {}
 
         for clip in self.pplisten:
-            if clip != None:
-                if clip.playing_position_has_listener(self.pplisten[clip]) == 1:
-                    clip.remove_playing_position_listener(self.pplisten[clip])
-                
+            if (
+                clip != None
+                and clip.playing_position_has_listener(self.pplisten[clip]) == 1
+            ):
+                clip.remove_playing_position_listener(self.pplisten[clip])
+
         self.pplisten = {}
 
         for clip in self.cnlisten:
-            if clip != None:
-                if clip.name_has_listener(self.cnlisten[clip]) == 1:
-                    clip.remove_name_listener(self.cnlisten[clip])
-                
+            if clip != None and clip.name_has_listener(self.cnlisten[clip]) == 1:
+                clip.remove_name_listener(self.cnlisten[clip])
+
         self.cnlisten = {}
 
         for clip in self.cclisten:
-            if clip != None:
-                if clip.color_has_listener(self.cclisten[clip]) == 1:
-                    clip.remove_color_listener(self.cclisten[clip])
-                
+            if clip != None and clip.color_has_listener(self.cclisten[clip]) == 1:
+                clip.remove_color_listener(self.cclisten[clip])
+
         self.cclisten = {}
         
     def add_clip_listeners(self):
         self.rem_clip_listeners()
-    
+
         tracks = self.getslots()
         for track in range(len(tracks)):
             for clip in range(len(tracks[track])):
                 c = tracks[track][clip]
                 if c.clip != None:
                     self.add_cliplistener(c.clip, track, clip)
-                    log("ClipLauncher: added clip listener tr: " + str(track) + " clip: " + str(clip));
-                
+                    log(f"ClipLauncher: added clip listener tr: {str(track)} clip: {str(clip)}");
+
                 self.add_slotlistener(c, track, clip)
         
     def add_cliplistener(self, clip, tid, cid):
@@ -431,39 +430,38 @@ class LiveOSC:
             for tr in self.masterlisten[type]:
                 if tr != None:
                     cb = self.masterlisten[type][tr]
-                
-                    test = eval("tr.mixer_device." + type+ ".value_has_listener(cb)")
-                
+
+                    test = eval(f"tr.mixer_device.{type}.value_has_listener(cb)")
+
                     if test == 1:
-                        eval("tr.mixer_device." + type + ".remove_value_listener(cb)")
+                        eval(f"tr.mixer_device.{type}.remove_value_listener(cb)")
 
         # Normal Tracks
         for type in ("arm", "solo", "mute"):
             for tr in self.mlisten[type]:
                 if tr != None:
                     cb = self.mlisten[type][tr]
-                    
+
                     if type == "arm":
-                        if tr.can_be_armed == 1:
-                            if tr.arm_has_listener(cb) == 1:
-                                tr.remove_arm_listener(cb)
-                                
+                        if tr.can_be_armed == 1 and tr.arm_has_listener(cb) == 1:
+                            tr.remove_arm_listener(cb)
+
                     else:
-                        test = eval("tr." + type+ "_has_listener(cb)")
-                
+                        test = eval(f"tr.{type}_has_listener(cb)")
+
                         if test == 1:
-                            eval("tr.remove_" + type + "_listener(cb)")
-                
+                            eval(f"tr.remove_{type}_listener(cb)")
+
         for type in ("volume", "panning"):
             for tr in self.mlisten[type]:
                 if tr != None:
                     cb = self.mlisten[type][tr]
-                
-                    test = eval("tr.mixer_device." + type+ ".value_has_listener(cb)")
-                
+
+                    test = eval(f"tr.mixer_device.{type}.value_has_listener(cb)")
+
                     if test == 1:
-                        eval("tr.mixer_device." + type + ".remove_value_listener(cb)")
-         
+                        eval(f"tr.mixer_device.{type}.remove_value_listener(cb)")
+
         for tr in self.mlisten["sends"]:
             if tr != None:
                 for send in self.mlisten["sends"][tr]:
@@ -472,8 +470,8 @@ class LiveOSC:
 
                         if send.value_has_listener(cb) == 1:
                             send.remove_value_listener(cb)
-                        
-                        
+
+
         for tr in self.mlisten["name"]:
             if tr != None:
                 cb = self.mlisten["name"][tr]
@@ -494,34 +492,34 @@ class LiveOSC:
 
                 if tr.output_meter_right_has_listener(cb) == 1:
                     tr.remove_output_meter_right_listener(cb)
-                    
-        # Return Tracks                
+
+        # Return Tracks
         for type in ("solo", "mute"):
             for tr in self.rlisten[type]:
                 if tr != None:
                     cb = self.rlisten[type][tr]
-                
-                    test = eval("tr." + type+ "_has_listener(cb)")
-                
+
+                    test = eval(f"tr.{type}_has_listener(cb)")
+
                     if test == 1:
-                        eval("tr.remove_" + type + "_listener(cb)")
-                
+                        eval(f"tr.remove_{type}_listener(cb)")
+
         for type in ("volume", "panning"):
             for tr in self.rlisten[type]:
                 if tr != None:
                     cb = self.rlisten[type][tr]
-                
-                    test = eval("tr.mixer_device." + type+ ".value_has_listener(cb)")
-                
+
+                    test = eval(f"tr.mixer_device.{type}.value_has_listener(cb)")
+
                     if test == 1:
-                        eval("tr.mixer_device." + type + ".remove_value_listener(cb)")
-         
+                        eval(f"tr.mixer_device.{type}.remove_value_listener(cb)")
+
         for tr in self.rlisten["sends"]:
             if tr != None:
                 for send in self.rlisten["sends"][tr]:
                     if send != None:
                         cb = self.rlisten["sends"][tr][send]
-                
+
                         if send.value_has_listener(cb) == 1:
                             send.remove_value_listener(cb)
 
@@ -531,7 +529,7 @@ class LiveOSC:
 
                 if tr.name_has_listener(cb) == 1:
                     tr.remove_name_listener(cb)
-                    
+
         self.mlisten = { "solo": {}, "mute": {}, "arm": {}, "panning": {}, "volume": {}, "sends": {}, "name": {}, "oml": {}, "omr": {} }
         self.rlisten = { "solo": {}, "mute": {}, "panning": {}, "volume": {}, "sends": {}, "name": {} }
         self.masterlisten = { "panning": {}, "volume": {}, "crossfader": {} }
@@ -539,37 +537,33 @@ class LiveOSC:
     
     def add_mixer_listeners(self):
         self.rem_mixer_listeners()
-        
+
         # Master Track
         tr = self.song().master_track
         for type in ("volume", "panning", "crossfader"):
             self.add_master_listener(0, type, tr)
-        
+
         self.add_meter_listener(0, tr, 2)
-        
+
         # Normal Tracks
         tracks = self.song().visible_tracks
         for track in range(len(tracks)):
             tr = tracks[track]
 
             self.add_trname_listener(track, tr, 0)
-            
+
             if tr.has_audio_output:
                 self.add_meter_listener(track, tr)
-            
+
             for type in ("arm", "solo", "mute"):
-                if type == "arm":
-                    if tr.can_be_armed == 1:
-                        self.add_mixert_listener(track, type, tr)
-                else:
+                if type == "arm" and tr.can_be_armed == 1 or type != "arm":
                     self.add_mixert_listener(track, type, tr)
-                
             for type in ("volume", "panning"):
                 self.add_mixerv_listener(track, type, tr)
-                
+
             for sid in range(len(tr.mixer_device.sends)):
                 self.add_send_listener(track, tr, sid, tr.mixer_device.sends[sid])
-        
+
         # Return Tracks
         tracks = self.song().return_tracks
         for track in range(len(tracks)):
@@ -577,13 +571,13 @@ class LiveOSC:
 
             self.add_trname_listener(track, tr, 1)
             self.add_meter_listener(track, tr, 1)
-            
+
             for type in ("solo", "mute"):
                 self.add_retmixert_listener(track, type, tr)
-                
+
             for type in ("volume", "panning"):
                 self.add_retmixerv_listener(track, type, tr)
-            
+
             for sid in range(len(tr.mixer_device.sends)):
                 self.add_retsend_listener(track, tr, sid, tr.mixer_device.sends[sid])
         
@@ -602,24 +596,24 @@ class LiveOSC:
     def add_mixert_listener(self, tid, type, track):
         if self.mlisten[type].has_key(track) != 1:
             cb = lambda :self.mixert_changestate(type, tid, track)
-            
+
             self.mlisten[type][track] = cb
-            eval("track.add_" + type + "_listener(cb)")
+            eval(f"track.add_{type}_listener(cb)")
             
     def add_mixerv_listener(self, tid, type, track):
         if self.mlisten[type].has_key(track) != 1:
             cb = lambda :self.mixerv_changestate(type, tid, track)
-            
+
             self.mlisten[type][track] = cb
-            eval("track.mixer_device." + type + ".add_value_listener(cb)")
+            eval(f"track.mixer_device.{type}.add_value_listener(cb)")
 
     # Add master listeners
     def add_master_listener(self, tid, type, track):
         if self.masterlisten[type].has_key(track) != 1:
             cb = lambda :self.mixerv_changestate(type, tid, track, 2)
-            
+
             self.masterlisten[type][track] = cb
-            eval("track.mixer_device." + type + ".add_value_listener(cb)")
+            eval(f"track.mixer_device.{type}.add_value_listener(cb)")
             
             
     # Add return listeners
@@ -636,16 +630,16 @@ class LiveOSC:
     def add_retmixert_listener(self, tid, type, track):
         if self.rlisten[type].has_key(track) != 1:
             cb = lambda :self.mixert_changestate(type, tid, track, 1)
-            
+
             self.rlisten[type][track] = cb
-            eval("track.add_" + type + "_listener(cb)")
+            eval(f"track.add_{type}_listener(cb)")
             
     def add_retmixerv_listener(self, tid, type, track):
         if self.rlisten[type].has_key(track) != 1:
             cb = lambda :self.mixerv_changestate(type, tid, track, 1)
-            
+
             self.rlisten[type][track] = cb
-            eval("track.mixer_device." + type + ".add_value_listener(cb)")      
+            eval(f"track.mixer_device.{type}.add_value_listener(cb)")      
 
 
     # Track name listener
@@ -655,11 +649,10 @@ class LiveOSC:
         if ret == 1:
             if self.rlisten["name"].has_key(track) != 1:
                 self.rlisten["name"][track] = cb
-        
-        else:
-            if self.mlisten["name"].has_key(track) != 1:
-                self.mlisten["name"][track] = cb
-        
+
+        elif self.mlisten["name"].has_key(track) != 1:
+            self.mlisten["name"][track] = cb
+
         track.add_name_listener(cb)
         
     # Output Meter Listeners
@@ -686,33 +679,32 @@ class LiveOSC:
         self.oscEndpoint.send('/live/name/clip', (tid, cid, str(clip.name), clip.color))
     
     def clip_position(self, clip, tid, cid):
-        if self.check_md(1):
-            if clip.is_playing:
-                self.oscEndpoint.send('/live/clip/position', (tid, cid, clip.playing_position, clip.length, clip.loop_start, clip.loop_end))
+        if self.check_md(1) and clip.is_playing:
+            self.oscEndpoint.send('/live/clip/position', (tid, cid, clip.playing_position, clip.length, clip.loop_start, clip.loop_end))
     
     def slot_changestate(self, slot, tid, cid):
         tmptrack = LiveUtils.getTrack(tid)
-        armed = tmptrack.arm and 1 or 0
-        
+        armed = 1 if tmptrack.arm else 0
+
         # Added new clip
         if slot.clip != None:
             self.add_cliplistener(slot.clip, tid, cid)
-            
+
             playing = 1
             if slot.clip.is_playing == 1:
                 playing = 2
-            
+
             if slot.clip.is_triggered == 1:
                 playing = 3
-            
+
             length =  slot.clip.loop_end - slot.clip.loop_start
-            
+
             self.oscEndpoint.send('/live/track/info', (tid, armed, cid, playing, length))
             self.oscEndpoint.send('/live/name/clip', (tid, cid, str(slot.clip.name), slot.clip.color))
         else:
             if self.clisten.has_key(slot.clip) == 1:
                 slot.clip.remove_playing_status_listener(self.clisten[slot.clip])
-                
+
             if self.pplisten.has_key(slot.clip) == 1:
                 slot.clip.remove_playing_position_listener(self.pplisten[slot.clip])
 
@@ -721,23 +713,23 @@ class LiveOSC:
 
             if self.cclisten.has_key(slot.clip) == 1:
                 slot.clip.remove_color_listener(self.cclisten[slot.clip])
-            
+
             self.oscEndpoint.send('/live/track/info', (tid, armed, cid, 0, 0.0))
             self.oscEndpoint.send('/live/clip/info', (tid, cid, 0))
                 
         #log("Slot changed" + str(self.clips[tid][cid]))
     
     def clip_changestate(self, clip, x, y):
-        log("Listener: x: " + str(x) + " y: " + str(y));
+        log(f"Listener: x: {str(x)} y: {str(y)}");
 
         playing = 1
-        
+
         if clip.is_playing == 1:
             playing = 2
-            
+
         if clip.is_triggered == 1:
             playing = 3
-            
+
         self.oscEndpoint.send('/live/clip/info', (x, y, playing))
         
         #log("Clip changed x:" + str(x) + " y:" + str(y) + " status:" + str(playing)) 
@@ -745,23 +737,23 @@ class LiveOSC:
         
     # Mixer Callbacks
     def mixerv_changestate(self, type, tid, track, r = 0):
-        val = eval("track.mixer_device." + type + ".value")
+        val = eval(f"track.mixer_device.{type}.value")
         types = { "panning": "pan", "volume": "volume", "crossfader": "crossfader" }
-        
+
         if r == 2:
-            self.oscEndpoint.send('/live/master/' + types[type], (float(val)))
+            self.oscEndpoint.send(f'/live/master/{types[type]}', float(val))
         elif r == 1:
-            self.oscEndpoint.send('/live/return/' + types[type], (tid, float(val)))
+            self.oscEndpoint.send(f'/live/return/{types[type]}', (tid, float(val)))
         else:
-            self.oscEndpoint.send('/live/' + types[type], (tid, float(val)))        
+            self.oscEndpoint.send(f'/live/{types[type]}', (tid, float(val)))        
         
     def mixert_changestate(self, type, tid, track, r = 0):
-        val = eval("track." + type)
-        
+        val = eval(f"track.{type}")
+
         if r == 1:
-            self.oscEndpoint.send('/live/return/' + type, (tid, int(val)))
+            self.oscEndpoint.send(f'/live/return/{type}', (tid, int(val)))
         else:
-            self.oscEndpoint.send('/live/' + type, (tid, int(val)))        
+            self.oscEndpoint.send(f'/live/{type}', (tid, int(val)))        
     
     def send_changestate(self, tid, track, sid, send, r = 0):
         val = send.value
@@ -793,22 +785,18 @@ class LiveOSC:
                 if lr == 0:
                     self.oscEndpoint.send('/live/return/meter', (tid, 0, float(track.output_meter_left)))
                 else:
-                    self.oscEndpoint.send('/live/return/meter', (tid, 1, float(track.output_meter_right)))        
-        else:
-            if self.check_md(4):
-                if lr == 0:
-                    self.oscEndpoint.send('/live/track/meter', (tid, 0, float(track.output_meter_left)))
-                else:
-                    self.oscEndpoint.send('/live/track/meter', (tid, 1, float(track.output_meter_right)))
+                    self.oscEndpoint.send('/live/return/meter', (tid, 1, float(track.output_meter_right)))
+        elif self.check_md(4):
+            if lr == 0:
+                self.oscEndpoint.send('/live/track/meter', (tid, 0, float(track.output_meter_left)))
+            else:
+                self.oscEndpoint.send('/live/track/meter', (tid, 1, float(track.output_meter_right)))
     
     def check_md(self, param):
         devices = self.song().master_track.devices
-        
+
         if len(devices) > 0:
-            if devices[0].parameters[param].value > 0:
-                return 1
-            else:
-                return 0
+            return 1 if devices[0].parameters[param].value > 0 else 0
         else:
             return 0
     
@@ -836,26 +824,23 @@ class LiveOSC:
     def rem_device_listeners(self):
         for pr in self.prlisten:
             ocb = self.prlisten[pr]
-            if pr != None:
-                if pr.value_has_listener(ocb) == 1:
-                    pr.remove_value_listener(ocb)
-        
+            if pr != None and pr.value_has_listener(ocb) == 1:
+                pr.remove_value_listener(ocb)
+
         self.prlisten = {}
-        
+
         for tr in self.dlisten:
             ocb = self.dlisten[tr]
-            if tr != None:
-                if tr.view.selected_device_has_listener(ocb) == 1:
-                    tr.view.remove_selected_device_listener(ocb)
-                    
+            if tr != None and tr.view.selected_device_has_listener(ocb) == 1:
+                tr.view.remove_selected_device_listener(ocb)
+
         self.dlisten = {}
-        
+
         for de in self.plisten:
             ocb = self.plisten[de]
-            if de != None:
-                if de.parameters_has_listener(ocb) == 1:
-                    de.remove_parameters_listener(ocb)
-                    
+            if de != None and de.parameters_has_listener(ocb) == 1:
+                de.remove_parameters_listener(ocb)
+
         self.plisten = {}
 
     def add_devpmlistener(self, device):
